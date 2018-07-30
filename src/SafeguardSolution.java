@@ -12,7 +12,9 @@ public class SafeguardSolution {
         try {
             for (int i = 1; i <= 10; i++) {
                 reader = new BufferedReader(new FileReader("input/" + i + ".in"));
+                // reader = new BufferedReader(new FileReader("1.1.in"));
                 output = new BufferedWriter(new FileWriter(new File("output/" + i + ".out")));
+                //output = new BufferedWriter(new FileWriter(new File("1.out")));
                 String line = reader.readLine();
                 List<Interval> intervals = new ArrayList<>();
                 while ((line = reader.readLine()) != null) {
@@ -21,8 +23,8 @@ public class SafeguardSolution {
                     intervals.add(interval);
                 }
                 Collections.sort(intervals);
-                Long result = handle(intervals);
-                System.out.println(result);
+                int result = handle(intervals);
+                System.out.println(i+".out: "+result);
                 output.write(result + "\n");
                 output.flush();
             }
@@ -38,43 +40,60 @@ public class SafeguardSolution {
 
     }
 
-    public static Long handle(List<Interval> intervals) {
-        Long count = 0L;
-        int start =intervals.get(0).start;
+    public static int handle(List<Interval> intervals) {
+        int count = intervals.get(0).end - intervals.get(0).start;
+        int start = intervals.get(0).start;
         int end = intervals.get(0).end;
+
+        boolean hasMinimal = false;
+        int minimalImpact = 0;
+
         int n = intervals.size();
         int[] impacts = new int[n];
         for (int i = 0; i < n; i++) {
             impacts[i] = intervals.get(i).end - intervals.get(i).start;
         }
-        for (int i = 1, j = 0; i < n; i++) {
-            if (intervals.get(i).start < intervals.get(j).end) {
-                if (intervals.get(j + 1).end < intervals.get(j).end) {
-                    impacts[j + 1] = 0;
+        for (int i = 1; i < n; i++) {
+            if (intervals.get(i).start < end) {//overlapping
+                if (intervals.get(i).end < end) { //interval i is inside interval i-1
+                    impacts[i] = 0;
+                    hasMinimal = true;
+                    minimalImpact = 0;
                     continue;
                 }
-                int overlapping = intervals.get(j).end - intervals.get(i).start;
-                count += overlapping;
-                impacts[i] = impacts[i] - overlapping;
-                impacts[i - 1] = impacts[i - 1] - overlapping;
-                j++;
-            } else {
-                while (intervals.get(i).start > intervals.get(j).end) {
-                    j++;
+                count += (intervals.get(i).end - end);
+                int overlapping = end - intervals.get(i).start;
+                end = intervals.get(i).end;
+                if (!hasMinimal) {
+                    impacts[i] = impacts[i] - overlapping;
+                    if (impacts[i] <= 0) {
+                        hasMinimal = true;
+                        minimalImpact = 0;
+                    }
+                    impacts[i - 1] = impacts[i - 1] - overlapping;
+                    if (impacts[i - 1] <= 0) {
+                        hasMinimal = true;
+                        minimalImpact = 0;
+                    }
+                }
+            } else {//not overlapping
+                count += (intervals.get(i).end - intervals.get(i).start);
+                start = intervals.get(i).start;
+                end = intervals.get(i).end;
+            }
+        }
+
+
+        if (!hasMinimal) {
+            minimalImpact = impacts[0];
+            for (int i = 1; i < n; ++i) {
+                if (minimalImpact > impacts[i]) {
+                    minimalImpact = impacts[i];
                 }
             }
         }
-        int minimalImpact = impacts[0];
-        count += impacts[0];
-        for (int i = 1; i < n; ++i) {
-            if (impacts[i] > 0) {
-                count += impacts[i];
-            }
-            if (minimalImpact > impacts[i]) {
-                minimalImpact = impacts[i];
-            }
-        }
-        System.out.println("minimal impact is :" + minimalImpact);
+
+        //System.out.println("minimal impact is :" + minimalImpact);
         return count - minimalImpact;
     }
 
